@@ -9,6 +9,8 @@ public class InputManager : MonoBehaviour
 
     public Action<bool> OnSprintInput;
     public Action OnJumpInput;
+    public Action OnClimbInput;
+    public Action OnCancelClimb;
 
     private void Update() {
         CheckMovementInput();
@@ -40,7 +42,6 @@ public class InputManager : MonoBehaviour
         bool isHoldSprintInput = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         if (isHoldSprintInput)
         {
-            Debug.Log("sprint");
             if (OnSprintInput != null)
             {
                 OnSprintInput(true);
@@ -68,6 +69,29 @@ public class InputManager : MonoBehaviour
         }
     }
 
+    private void CheckClimbInput()
+    {
+        bool isPressClimbInput = Input.GetKeyDown(KeyCode.E);
+
+        if (isPressClimbInput)
+        {
+            OnClimbInput();
+        }
+    }
+
+    private void CheckCancelInput()
+    {
+        bool isPressCancelInput = Input.GetKeyDown(KeyCode.C);
+
+        if (isPressCancelInput)
+        {
+            if (OnCancelClimb != null)
+            {
+                OnCancelClimb();
+            }
+        }
+    }
+
     private void CheckCrouchInput()
     {
         bool isPressCrouchInput = Input.GetKeyDown(KeyCode.LeftControl) ||
@@ -88,16 +112,6 @@ public class InputManager : MonoBehaviour
         }
     }
 
-    private void CheckClimbInput()
-    {
-        bool isPressClimbInput = Input.GetKeyDown(KeyCode.E);
-
-        if (isPressClimbInput)
-        {
-            Debug.Log("Climb");
-        }
-    }
-
     private void CheckGlideInput()
     {
         bool isPressGlideInput = Input.GetKeyDown(KeyCode.G);
@@ -105,16 +119,6 @@ public class InputManager : MonoBehaviour
         if (isPressGlideInput)
         {
             Debug.Log("Glide");
-        }
-    }
-
-    private void CheckCancelInput()
-    {
-        bool isPressCancelInput = Input.GetKeyDown(KeyCode.C);
-
-        if (isPressCancelInput)
-        {
-            Debug.Log("Cancel Climb or Glide");
         }
     }
 
