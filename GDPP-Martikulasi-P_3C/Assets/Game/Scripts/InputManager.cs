@@ -7,8 +7,20 @@ public class InputManager : MonoBehaviour
 {
     public Action<UnityEngine.Vector2> OnMoveInput;
 
+    public Action<bool> OnSprintInput;
+    public Action OnJumpInput;
+
     private void Update() {
         CheckMovementInput();
+        CheckSprintInput();
+        CheckJumpInput();
+        CheckCrouchInput();
+        CheckChangePOVInput();
+        CheckClimbInput();
+        CheckGlideInput();
+        CheckCancelInput();
+        CheckPunchInput();
+        CheckMainMenuInput();
     }
     
     private void CheckMovementInput()
@@ -25,25 +37,34 @@ public class InputManager : MonoBehaviour
     
     private void CheckSprintInput()
     {
-    bool isHoldSprintInput = Input.GetKey(KeyCode.LeftShift) ||
-                                Input.GetKey(KeyCode.RightShift);
+        bool isHoldSprintInput = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         if (isHoldSprintInput)
         {
-            Debug.Log("Sprinting");
+            Debug.Log("sprint");
+            if (OnSprintInput != null)
+            {
+                OnSprintInput(true);
+            }
         }
         else
         {
-            Debug.Log("Not Sprinting");
+            if (OnSprintInput != null)
+            {
+                OnSprintInput(false);
+            }
         }
     }
 
     private void CheckJumpInput()
     {
         bool isPressJumpInput = Input.GetKeyDown(KeyCode.Space);
-
+ 
         if (isPressJumpInput)
         {
-            Debug.Log("Jump");
+            if (OnJumpInput != null)
+            {
+                OnJumpInput();
+            }
         }
     }
 
