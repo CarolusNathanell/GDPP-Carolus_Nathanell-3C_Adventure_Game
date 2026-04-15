@@ -43,6 +43,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Vector3 _glideRotationSpeed;
     [SerializeField] private float _minGlideRotationX;
     [SerializeField] private float _maxGlideRotationX;
+    private Vector3 rotationDegree = Vector3.zero;
 
     private bool _isPunching;
     private int _combo = 0;
@@ -57,7 +58,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private PlayerAudioManager _playerAudioManager;
     [SerializeField] private Transform _cameraTransform;
     [SerializeField] private CameraManager _cameraManager;
-
+    
+    [SerializeField] private Transform _resetCheckpointPosition;
     private Animator _animator;
     private void Awake()
     {
@@ -144,8 +146,27 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (isPlayerClimbing)
         {
-            Vector3 horizontal = axisDirection.x * transform.right;
-            Vector3 vertical = axisDirection.y * transform.up;
+            Vector3 horizontal = Vector3.zero;
+            Vector3 vertical = Vector3.zero;
+            Vector3 checkerLeftPosition = transform.position + (transform.up * 1) + (-transform.right * .75f);
+            Vector3 checkerRightPosition = transform.position + (transform.up * 1) + (transform.right * 1f);
+            Vector3 checkerUpPosition = transform.position + (transform.up * 2.5f);
+            Vector3 checkerDownPosition = transform.position + (-transform.up * .25f);
+            bool isAbleClimbLeft = Physics.Raycast(checkerLeftPosition, transform.forward, _climbCheckDistance, _climbableLayer);
+            bool isAbleClimbRight = Physics.Raycast(checkerRightPosition, transform.forward, _climbCheckDistance, _climbableLayer);
+            bool isAbleClimbUp = Physics.Raycast(checkerUpPosition, transform.forward, _climbCheckDistance, _climbableLayer);
+            bool isAbleClimbDown = Physics.Raycast(checkerDownPosition, transform.forward, _climbCheckDistance, _climbableLayer);
+            
+            if ((isAbleClimbLeft && (axisDirection.x < 0)) || (isAbleClimbRight && (axisDirection.x > 0)))
+            {
+            horizontal = axisDirection.x * transform.right;
+            }
+            
+            if ((isAbleClimbUp && (axisDirection.y > 0)) || (isAbleClimbDown && (axisDirection.y < 0)))
+            {
+            vertical = axisDirection.y * transform.up;
+            }
+            
             movementDirection = horizontal + vertical;
             _rigidbody.AddForce(movementDirection * Time.deltaTime * _climbSpeed);
             Vector3 velocity = new Vector3(_rigidbody.velocity.x, _rigidbody.velocity.y, 0);
@@ -154,7 +175,6 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (isPlayerGliding)
         {
-            Vector3 rotationDegree = transform.rotation.eulerAngles;
             rotationDegree.x += _glideRotationSpeed.x * axisDirection.y * Time.deltaTime;
             rotationDegree.x = Mathf.Clamp(rotationDegree.x, _minGlideRotationX, _maxGlideRotationX);
             rotationDegree.z += _glideRotationSpeed.z * axisDirection.x * Time.deltaTime;
@@ -183,9 +203,10 @@ public class PlayerMovement : MonoBehaviour
     
     private void Jump()
     {
-        if (_isGrounded)
+        if (_isGrounded && !_isPunching)
         {
-            _animator.SetTrigger("Jump");
+            _animator.SetBool("IsJump", true);
+            _animator.SetBool("IsJump", false);
             Vector3 jumpDirection = Vector3.up;
             _rigidbody.AddForce(jumpDirection * _jumpForce * Time.deltaTime);
         }
@@ -218,24 +239,23 @@ public class PlayerMovement : MonoBehaviour
 
     private void StartClimb()
     {
-	    bool isInFrontOfClimbingWall = Physics.Raycast(_climbDetector.position,
-                                                    transform.forward,
-                                                    out RaycastHit hit,
-                                                    _climbCheckDistance,
-                                                    _climbableLayer);
+        bool isInFrontOfClimbingWall = Physics.Raycast(_climbDetector.position, transform.forward, out RaycastHit hit, _climbCheckDistance, _climbableLayer);
         bool isNotClimbing = _playerStance != PlayerStance.Climb;
         
         if (isInFrontOfClimbingWall && _isGrounded && isNotClimbing)
-        {
-            _animator.SetBool("IsClimbing", true);
-            _collider.center = Vector3.up * 1.3f;
-            _cameraManager.SetFPSClampedCamera(true, transform.rotation.eulerAngles);
-            _cameraManager.SetTPSFieldOfView(70);
-            Vector3 offset = (transform.forward * _climbOffset.z) + (Vector3.up * _climbOffset.y);
-            transform.position = hit.point - offset;
-            _playerStance = PlayerStance.Climb;
-            _rigidbody.useGravity = false;
-        }
+            {
+                _cameraManager.SetFPSClampedCamera(true, transform.rotation.eulerAngles);
+                Vector3 climbablePoint = hit.collider.bounds.ClosestPoint(transform.position);
+                Vector3 direction = (climbablePoint - transform.position).normalized;
+                direction.y = 0;
+                transform.rotation = Quaternion.LookRotation(direction);
+                Vector3 offset = (transform.forward * _climbOffset.z) - (Vector3.up * _climbOffset.y);
+                transform.position = hit.point - offset;
+                _playerStance = PlayerStance.Climb;
+                _animator.SetBool("IsClimbing", true);
+                _rigidbody.useGravity = false;
+                _cameraManager.SetTPSFieldOfView(70);
+            }
     }
     
     private void CancelClimb()
@@ -265,6 +285,9 @@ public class PlayerMovement : MonoBehaviour
 
     private void Crouch()
     {
+        Vector3 checkerUpPosition = transform.position + (transform.up * 1.4f);
+        bool isCantStand = Physics.Raycast(checkerUpPosition, transform.up, 0.25f, _groundLayer);
+
         if (_playerStance == PlayerStance.Stand)
         {
             _playerStance = PlayerStance.Crouch;
@@ -273,7 +296,7 @@ public class PlayerMovement : MonoBehaviour
             _collider.height = 1.3f;
             _collider.center = Vector3.up * 0.66f;
         }
-        else if (_playerStance == PlayerStance.Crouch)
+        else if (_playerStance == PlayerStance.Crouch && !isCantStand)
         {
             _playerStance = PlayerStance.Stand;
             _animator.SetBool("IsCrouch", false);
@@ -287,6 +310,7 @@ public class PlayerMovement : MonoBehaviour
     {
         if (_playerStance != PlayerStance.Glide && !_isGrounded)
         {
+            rotationDegree = transform.rotation.eulerAngles;
             _cameraManager.SetFPSClampedCamera(true, transform.rotation.eulerAngles);
             _animator.SetBool("IsGliding", true);
             _playerStance = PlayerStance.Glide;
@@ -320,7 +344,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Punch()
     {
-        if (!_isPunching && _playerStance == PlayerStance.Stand)
+        if (!_isPunching && _playerStance == PlayerStance.Stand && _isGrounded)
         {
             _isPunching = true;
             if (_combo < 3)
@@ -363,6 +387,15 @@ public class PlayerMovement : MonoBehaviour
             {
                 Destroy(hitObjects[i].gameObject);
             }
+        }
+    }
+
+    public void ResetPositionToCheckpoint()
+    {
+        if (_resetCheckpointPosition != null)
+        {
+            transform.position = _resetCheckpointPosition.position;
+            transform.rotation = _resetCheckpointPosition.rotation;
         }
     }
 }

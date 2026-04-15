@@ -5,10 +5,16 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Basic/Game/Scenes/MainMenu.unity
     guid: ca672ba8cfbefd045bc2b589df96e457
-  - enabled: 1
+  - enabled: 0
     path: Assets/Basic/Game/Scenes/Gameplay.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Game/Scenes/ForestHillGameMainMenu.unity
+    guid: fbdf2204665d9a1419ee322e19e2d80c
+  - enabled: 1
+    path: Assets/Game/Scenes/ForestHillGame.unity
+    guid: e098cc2390b45404b886ed896404c34e
   m_configObjects: {}
